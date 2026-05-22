@@ -1,6 +1,36 @@
 {% extends "main.html" %}
 {% block result %}
 
+{% if result.allwords() %}
+<div class="row">
+   <div class="col-xs-12">
+      <div class="panel panel-default">
+         <div class="panel-body">
+            <form class="form-inline" onsubmit="return false;">
+               <div class="form-group">
+                  <label class="control-label">Lengd:&nbsp;</label>
+                  <input type="number" id="filter-min" class="form-control" style="width:65px" placeholder="Frá">
+                  <span>&nbsp;&ndash;&nbsp;</span>
+                  <input type="number" id="filter-max" class="form-control" style="width:65px" placeholder="Til">
+               </div>
+               &nbsp;&nbsp;
+               <label class="control-label">Sæti:&nbsp;</label><span id="pos-filter-container"></span>
+               &nbsp;&nbsp;
+               <div class="form-group">
+                  <label class="control-label">Inniheldur:&nbsp;</label>
+                  <input type="text" id="filter-contains" class="form-control" maxlength="4" style="width:5em" placeholder="stafir">
+               </div>
+               &nbsp;&nbsp;
+               <button class="btn btn-default btn-sm" type="button" id="filter-clear">Hreinsa</button>
+               &nbsp;
+               <span id="filter-count" class="text-muted small"></span>
+            </form>
+         </div>
+      </div>
+   </div>
+</div>
+{% endif %}
+
 <div class="row">
    <div class="col-xs-12">
       <div class="panel panel-success">
@@ -19,7 +49,7 @@
          <div class="panel-body">
             <h3>
 {% for w, sc in result.allwords() %}
-               <a href="/?rack={{ w|urlencode }}">
+               <a href="/?rack={{ w|urlencode }}" data-word="{{ w }}">
 {%- if (w|length) >= 7 -%}
                <span class="label label-danger resultword">
 {%- elif (w|length == result.rack()|length) -%}
@@ -44,15 +74,13 @@
       <div class="panel panel-info">
          <div class="panel-body">
             <h3>
-{% for ch, l in result.combinations() %}
-               <span class="label label-primary resultword">{{ ch }}</span>
-{%- for w in l -%}
+{% for ch, l in result.combinations() %}<span class="combination-group">               <span class="label label-primary resultword">{{ ch }}</span>{%- for w in l -%}
                
 {%- if loop.index == 1 -%}
 &nbsp;
 {%- endif -%}
-               <a href="/?rack={{ w|urlencode }}"><span class="label label-info resultword">{{ w }}</span></a>
-{% endfor %}
+               <a href="/?rack={{ w|urlencode }}" data-word="{{ w }}"><span class="label label-info resultword">{{ w }}</span></a>
+{% endfor %}</span>
 {% endfor %}
             </h3>
          </div>
@@ -60,6 +88,131 @@
    </div>
 </div>
 {% endif %}
+
+<script>
+(function () {
+   var _minLen = 1, _maxLen = 15, _currentBoxCount = 0;
+
+   function renderPosBoxes(count) {
+      var container = document.getElementById('pos-filter-container');
+      var saved = {};
+      var existing = container.querySelectorAll('input[data-pos]');
+      for (var i = 0; i < existing.length; i++) {
+         saved[existing[i].getAttribute('data-pos')] = existing[i].value;
+      }
+      container.innerHTML = '';
+      for (var p = 1; p <= count; p++) {
+         var inp = document.createElement('input');
+         inp.type = 'text';
+         inp.maxLength = 1;
+         inp.setAttribute('data-pos', p);
+         inp.placeholder = String(p);
+         inp.className = 'form-control';
+         inp.style.cssText = 'width:2.2em;text-align:center;padding:4px 2px;display:inline-block;margin-right:2px;';
+         if (saved[String(p)]) inp.value = saved[String(p)];
+         inp.addEventListener('input', applyFilters);
+         container.appendChild(inp);
+      }
+      _currentBoxCount = count;
+   }
+
+   function initFilters() {
+      var wordLinks = document.querySelectorAll('a[data-word]');
+      if (!wordLinks.length) return;
+      var lengths = [];
+      for (var n = 0; n < wordLinks.length; n++) {
+         lengths.push(wordLinks[n].getAttribute('data-word').length);
+      }
+      _minLen = Math.min.apply(null, lengths);
+      _maxLen = Math.max.apply(null, lengths);
+      var elMin = document.getElementById('filter-min');
+      var elMax = document.getElementById('filter-max');
+      elMin.value = _minLen;
+      elMin.min = _minLen;
+      elMin.max = _maxLen;
+      elMax.value = _maxLen;
+      elMax.min = _minLen;
+      elMax.max = _maxLen;
+      elMin.addEventListener('input', applyFilters);
+      elMax.addEventListener('input', applyFilters);
+      document.getElementById('filter-clear').addEventListener('click', clearFilters);
+      document.getElementById('filter-contains').addEventListener('input', applyFilters);
+      renderPosBoxes(_maxLen);
+   }
+
+   function applyFilters() {
+      var minVal = parseInt(document.getElementById('filter-min').value, 10);
+      var maxVal = parseInt(document.getElementById('filter-max').value, 10);
+      var minLen = isNaN(minVal) ? _minLen : minVal;
+      var maxLen = isNaN(maxVal) ? _maxLen : maxVal;
+      if (maxLen !== _currentBoxCount) {
+         renderPosBoxes(maxLen);
+      }
+      var pairs = [];
+      var posInputs = document.querySelectorAll('#pos-filter-container input[data-pos]');
+      for (var i = 0; i < posInputs.length; i++) {
+         var letter = (posInputs[i].value || '').trim().toLowerCase();
+         if (letter.length > 0) {
+            pairs.push({ pos: parseInt(posInputs[i].getAttribute('data-pos'), 10), letter: letter });
+         }
+      }
+      var required = (document.getElementById('filter-contains').value || '').trim().toLowerCase();
+      var shown = 0, total = 0;
+      var wordLinks = document.querySelectorAll('a[data-word]');
+      for (var j = 0; j < wordLinks.length; j++) {
+         var el = wordLinks[j];
+         var word = el.getAttribute('data-word');
+         var visible = (word.length >= minLen && word.length <= maxLen);
+         for (var k = 0; k < pairs.length && visible; k++) {
+            var idx = pairs[k].pos - 1;
+            visible = (idx < word.length && word[idx] === pairs[k].letter);
+         }
+         if (visible && required.length > 0) {
+            var rem = word;
+            for (var r = 0; r < required.length && visible; r++) {
+               var ridx = rem.indexOf(required[r]);
+               if (ridx === -1) { visible = false; }
+               else { rem = rem.slice(0, ridx) + rem.slice(ridx + 1); }
+            }
+         }
+         el.style.display = visible ? '' : 'none';
+         total++;
+         if (visible) shown++;
+      }
+      var groups = document.querySelectorAll('.combination-group');
+      for (var g = 0; g < groups.length; g++) {
+         var grp = groups[g];
+         var anyVisible = false;
+         var grpLinks = grp.querySelectorAll('a[data-word]');
+         for (var h = 0; h < grpLinks.length; h++) {
+            if (grpLinks[h].style.display !== 'none') {
+               anyVisible = true;
+               break;
+            }
+         }
+         grp.style.display = anyVisible ? '' : 'none';
+      }
+      var anyPosFilter = false;
+      for (var pi = 0; pi < posInputs.length; pi++) {
+         if ((posInputs[pi].value || '').trim().length > 0) { anyPosFilter = true; break; }
+      }
+      var isFiltered = (minLen !== _minLen || maxLen !== _maxLen || anyPosFilter || required.length > 0);
+      document.getElementById('filter-count').textContent = isFiltered ? (shown + ' / ' + total + ' orð') : '';
+   }
+
+   function clearFilters() {
+      document.getElementById('filter-min').value = _minLen;
+      document.getElementById('filter-max').value = _maxLen;
+      document.getElementById('filter-contains').value = '';
+      document.getElementById('pos-filter-container').innerHTML = '';
+      _currentBoxCount = 0;
+      renderPosBoxes(_maxLen);
+      applyFilters();
+   }
+
+   document.addEventListener('DOMContentLoaded', initFilters);
+}());
+</script>
 
 {% endblock %}
 

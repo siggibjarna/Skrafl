@@ -1,6 +1,6 @@
-## Skraflhjálp (SCRABBLE(tm) Helper)
+# Skraflhjálp (SCRABBLE(tm) Helper)
 
-### English summary
+## English summary
 
 This set of Python 3.x programs and modules
 implements a dictionary and word permutation engine that is the core of an
@@ -28,7 +28,7 @@ edges into multi-letter edges, reducing the node count significantly.
 
 At run time, permutations are found in an efficient way, even in the presence of
 wildcards (blank tiles), by direct traversal of the graph.
-For details see the ```dawgbuilder.py``` and ```dawgdictionary.py``` files.
+For details see the [dawgbuilder.py](dawgbuilder.py) and [dawgdictionary.py](dawgdictionary.py) files.
 
 The code builds a 103,000 node DAWG for the Icelandic language, 2.6 million words, in about
 38 seconds (PyPy) / 160 seconds (CPython) on a medium-powered Windows desktop PC.
@@ -45,7 +45,7 @@ rack with one additional letter, typically takes 30-70 milliseconds (CPython).
 *SCRABBLE is a registered trademark. This software or its author are in no way affiliated
 with or endorsed by the owners or licensees of the SCRABBLE trademark.*
 
-### Íslenskt yfirlit
+## Íslenskt yfirlit
 
 Vefur sem hjálpar skröflurum að finna orð í rekkanum og tengja þau við stafi sem fyrir eru.
 
@@ -58,32 +58,50 @@ mismunandi skjám, þ.e. síma, spjaldtölvu eða borðtölvu.
 
 Vefinn má nálgast á [https://skraflhjalp.appspot.com](https://skraflhjalp.appspot.com)
 
-### Notkun vefsins
+## Notkun vefsins
 Ef farið er inn á vefslóðina / kemur upp aðalsíða Skraflhjálpar.
 Slóðin /help gefur hjálparsíðu.
 
-### Til að keyra á eigin tölvu
+## Til að keyra á eigin tölvu
+
 1. Settu upp [Python 3.11](https://www.python.org/downloads/release/python-3119/).
 
-2. Sæktu þetta Git safn:
+2. Búðu til og virkjaðu sýndarumhverfi (virtual environment)
+   - Búðu til með skipun eins og `python -m venv .venv` eða `uv venv --python 3.11.13`
+   - Virkjaðu með skipuninni `source .venv/bin/activate` eða `.venv\Scripts\activate`
 
-   ```
+3. Sæktu þetta Git safn:
+
+   ```sh
    git clone https://github.com/vthorsteinsson/skrafl.git
    ```
 
-3. Sæktu undirforritasöfn.
+4. Sæktu undirforritasöfn.
 
-   ```
+   ```sh
    cd skrafl
    pip install -r requirements.txt
    ```
-4. Keyra má vefþjón Skraflhjálpar í þróunarham beint frá skipanalínu.
 
+   eða
+
+   ```sh
+   uv pip install -r requirements.txt --link-mode=copy
    ```
+
+5. Búa til DAWG skrána fyrir orðasafnið
+
+   ```bash
+   python dawgbuilder.py
+   ```
+
+6. Keyra má vefþjón Skraflhjálpar í þróunarham beint frá skipanalínu.
+
+   ```bash
    python skrafl.py
    ```
 
-5. Nálgast má vefinn á vefrápara:
+7. Nálgast má vefinn á vefrápara:
 
    Í skýinu á appspot.com [https://skraflhjalp.appspot.com](https://skraflhjalp.appspot.com)
 
@@ -91,9 +109,8 @@ Slóðin /help gefur hjálparsíðu.
 
    Ef óskað er, má breyta port-númerinu neðst í skránni ```skrafl.py```.
 
-### Höfundur
+## Höfundur
 
 Vilhjálmur Þorsteinsson
 
 Copyright (C) 2024 Miðeind ehf.
-

@@ -124,5 +124,6 @@ $RECYCLE.BIN/
 *.msp
 
 # Other
+.venv/
 .direnv/
 .envrc
